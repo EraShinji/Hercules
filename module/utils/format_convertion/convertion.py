@@ -12,6 +12,10 @@ class Convertion(ABC):
     @abstractmethod
     def to_tensor(self):
         pass
+
     @abstractmethod
-    def load(self):
+    def _load(self):
+        pass
+    @abstractmethod
+    def _parse_hea(self):
         pass
