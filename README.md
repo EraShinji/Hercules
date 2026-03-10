@@ -1,4 +1,6 @@
-# ECG Contrastive Learning Classification
+# HERCULES: HEart Rhythm Classification via Unsupervised LEarning for Smartwatches
+
+**H**Eart **R**hythm **C**lassification via **U**nsupervised **L**earning for Smartwatch**ES**
 
 基于对比学习的ECG心电信号分类模型，支持在Apple Watch等边缘设备上部署。
 
@@ -120,3 +122,6 @@ uv sync
 ## 许可证
 
 MIT-License
+
+## 相关文档
+HEA文件头格式 [](./documents/hea_file.md)
