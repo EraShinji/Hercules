@@ -4,10 +4,12 @@ import numpy as np
 from torch import Tensor
 
 class Convertion(ABC):
-    basic_path:str
     dat: Optional[np.ndarray]
     hea: Optional[List[str]]
     dat_tensor: Optional[Tensor]
+
+    def __init__(self, basic_path: str):
+        self.basic_path = basic_path
 
     @abstractmethod
     def to_tensor(self):
