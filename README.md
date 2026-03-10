@@ -122,3 +122,6 @@ uv sync
 ## 许可证
 
 MIT-License
+
+## 相关文档
+HEA文件头格式 [](./documents/hea_file.md)
