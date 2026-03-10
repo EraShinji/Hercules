@@ -20,9 +20,9 @@ class Dat2Tensor(Convertion):
 
     def _load(self):
         """
-        加载 .dat 信号数据和 .hea 头文件数据
+        Load .dat signal data and .hea header file data
         """
-        # 使用 wfdb 读取 dat/hea 文件对
+        # Use wfdb to read dat/hea file pair
         record = wfdb.rdrecord(self.basic_path)
         full_data = record.p_signal
         self._parse_hea()
@@ -34,24 +34,24 @@ class Dat2Tensor(Convertion):
         return self.dat, self.hea
     def _parse_hea(self):
         """
-        解析 .hea 头文件数据，并根据 lead_name 设置 lead_index
+        Parse .hea header file data and set lead_index based on lead_name
         """
         record = wfdb.rdheader(self.basic_path)
         self.hea = record.__dict__
 
-        # 获取导联名称列表并查找目标导联的索引
+        # Get lead name list and find the index of target lead
         if hasattr(record, 'sig_name') and record.sig_name:
             try:
                 self.lead_index = record.sig_name.index(self.lead_name)
             except ValueError:
-                raise ValueError(f"导联名称 '{self.lead_name}' 不存在于文件中。可用的导联: {record.sig_name}")
+                raise ValueError(f"Lead name '{self.lead_name}' not found in file. Available leads: {record.sig_name}")
 
         return self.hea
 
 
     def to_tensor(self):
         """
-        将加载的数据转换为 PyTorch Tensor
+        Convert loaded data to PyTorch Tensor
         """
         if self.dat is None:
             raise ValueError("Data not loaded.")

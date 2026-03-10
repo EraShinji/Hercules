@@ -55,17 +55,17 @@ class Mat2Tensor(Convertion):
 
     def _parse_hea(self):
         """
-        使用 wfdb 解析 .hea 头文件数据，并根据 lead_name 设置 lead_index
+        Parse .hea header file using wfdb and set lead_index based on lead_name
         """
         record = wfdb.rdheader(self.basic_path)
         self.hea = record.__dict__
 
-        # 获取导联名称列表并查找目标导联的索引
+        # Get lead name list and find the index of target lead
         if hasattr(record, 'sig_name') and record.sig_name:
             try:
                 self.lead_index = record.sig_name.index(self.lead_name)
             except ValueError:
-                raise ValueError(f"导联名称 '{self.lead_name}' 不存在于文件中。可用的导联: {record.sig_name}")
+                raise ValueError(f"Lead name '{self.lead_name}' not found in file. Available leads: {record.sig_name}")
     def to_tensor(self):
         if self.dat is None:
             raise ValueError("Data not loaded.")
