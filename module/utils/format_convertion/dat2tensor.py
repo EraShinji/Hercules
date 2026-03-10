@@ -6,14 +6,15 @@ import numpy as np
 from module.utils.format_convertion.convertion import Convertion
 
 
-@dataclass
 class Dat2Tensor(Convertion):
-    def __init__(self, dat_path:str, hea_path:str):
-        self.dat_path = dat_path
-        self.hea_path = hea_path
+    def __init__(self,  basic_path: str, lead_name: str = "I"):
+        super().__init__(basic_path)
         self.dat = None
         self.hea = None
         self.dat_tensor = None
+        self.lead_name = lead_name
+        self.lead_index = None
+        self.hea_comments = {}
         self._load()
         self.to_tensor()
 
@@ -22,10 +23,31 @@ class Dat2Tensor(Convertion):
         加载 .dat 信号数据和 .hea 头文件数据
         """
         # 使用 wfdb 读取 dat/hea 文件对
-        record = wfdb.rdrecord(self.dat_path.replace('.dat', ''))
-        self.dat = record.p_signal
-        self.hea = record.__dict__
+        record = wfdb.rdrecord(self.basic_path)
+        full_data = record.p_signal
+        self._parse_hea()
+        if self.lead_index is not None and full_data is not None:
+            self.dat = full_data[:, self.lead_index]
+        else:
+            self.dat = full_data
+
         return self.dat, self.hea
+    def _parse_hea(self):
+        """
+        解析 .hea 头文件数据，并根据 lead_name 设置 lead_index
+        """
+        record = wfdb.rdheader(self.basic_path)
+        self.hea = record.__dict__
+
+        # 获取导联名称列表并查找目标导联的索引
+        if hasattr(record, 'sig_name') and record.sig_name:
+            try:
+                self.lead_index = record.sig_name.index(self.lead_name)
+            except ValueError:
+                raise ValueError(f"导联名称 '{self.lead_name}' 不存在于文件中。可用的导联: {record.sig_name}")
+
+        return self.hea
+
 
     def to_tensor(self):
         """
@@ -36,4 +58,12 @@ class Dat2Tensor(Convertion):
         from torch import tensor
         self.dat_tensor = tensor(self.dat)
         return self.dat_tensor
+if __name__ == "__main__":
+    from pathlib import Path
+    project_root = Path(__file__).resolve().parents[4]
+    base_path = str(project_root / "Hercules"/ "data" / "for_test" / "dat" / "103554663")
 
+    dat2tensor = Dat2Tensor(base_path)
+    print(dat2tensor.hea)
+    print(dat2tensor.dat_tensor)
+    print("Data tensor shape:", dat2tensor.dat_tensor.shape)

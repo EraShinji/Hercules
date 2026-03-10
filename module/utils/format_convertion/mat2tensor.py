@@ -2,6 +2,7 @@ from scipy import io
 from torch import tensor
 from module.utils.format_convertion.convertion import Convertion
 from typing import Dict, List, Optional
+import wfdb
 
 class Mat2Tensor(Convertion):
     """
@@ -15,9 +16,9 @@ class Mat2Tensor(Convertion):
             basic_path (str): The base path of the record, without the file extension.
             lead_name (str): Name of the lead to extract (e.g., "I", "II", "V1", etc.)
         """
-        self.basic_path = basic_path
-        self.dat_path = self.basic_path + ".mat"
-        self.hea_path = self.basic_path + ".hea"
+        super().__init__(basic_path)
+        self.dat_path = basic_path + ".mat"
+        self.hea_path = basic_path + ".hea"
         self.dat = None
         self.hea = None
         self.dat_tensor = None
@@ -40,22 +41,13 @@ class Mat2Tensor(Convertion):
         mat_data = io.loadmat(self.dat_path)
         full_data = mat_data.get('val') if 'val' in mat_data else list(mat_data.values())[-1]
 
-        # 2. Read .hea text data
-        try:
-            with open(self.hea_path, 'r', encoding='utf-8') as f:
-                self.hea = f.readlines()
-        except FileNotFoundError:
-            print(f"Failed to load header file {self.hea_path}")
-            self.hea = None
-            self.dat = full_data
-            return self.dat, self.hea
-
-        # 3. Parse hea file to extract lead info and comments
+        # 2. Parse hea file to extract lead info and comments
         self._parse_hea()
 
-        # 4. Extract specified lead data
+        # 3. Extract specified lead data
+        # MAT file shape is (leads, samples), need row slicing
         if self.lead_index is not None and full_data is not None:
-            self.dat = full_data[self.lead_index]
+            self.dat = full_data[self.lead_index, :]
         else:
             self.dat = full_data
 
@@ -63,42 +55,17 @@ class Mat2Tensor(Convertion):
 
     def _parse_hea(self):
         """
-        Parse hea file content to extract lead indices and comments.
+        使用 wfdb 解析 .hea 头文件数据，并根据 lead_name 设置 lead_index
         """
-        if not self.hea:
-            return
+        record = wfdb.rdheader(self.basic_path)
+        self.hea = record.__dict__
 
-        lead_names = []
-        comments = {}
-
-        for line in self.hea:
-            line = line.strip()
-            if not line:
-                continue
-
-            # Parse comment lines (starting with #)
-            if line.startswith('#'):
-                # Extract key-value pairs like #Age: 85
-                if ':' in line:
-                    key_value = line[1:].split(':', 1)  # Remove # and split
-                    if len(key_value) == 2:
-                        key = key_value[0].strip()
-                        value = key_value[1].strip()
-                        comments[key] = value
-                continue
-
-            # Parse lead info lines (format: filename.mat ... lead_name)
-            parts = line.split()
-            if len(parts) >= 3 and parts[0].endswith('.mat'):
-                # Last part is the lead name
-                lead_name = parts[-1]
-                lead_names.append(lead_name)
-
-        self.hea_comments = comments
-
-        # Find the index of the requested lead
-        if self.lead_name in lead_names:
-            self.lead_index = lead_names.index(self.lead_name)
+        # 获取导联名称列表并查找目标导联的索引
+        if hasattr(record, 'sig_name') and record.sig_name:
+            try:
+                self.lead_index = record.sig_name.index(self.lead_name)
+            except ValueError:
+                raise ValueError(f"导联名称 '{self.lead_name}' 不存在于文件中。可用的导联: {record.sig_name}")
     def to_tensor(self):
         if self.dat is None:
             raise ValueError("Data not loaded.")
@@ -116,5 +83,5 @@ if __name__ == '__main__':
     converter = Mat2Tensor(base_path, lead_name="I")
     print("Lead name:", converter.lead_name)
     print("Lead index:", converter.lead_index)
-    print("HEA comments:", converter.hea_comments)
+    print("HEA comments:", converter.hea)
     print("Data tensor shape:", converter.dat_tensor.shape)
