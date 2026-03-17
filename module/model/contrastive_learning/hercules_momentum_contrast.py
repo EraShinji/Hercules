@@ -1,3 +1,4 @@
+import copy
 import torch
 import torch.nn as nn
 
@@ -5,23 +6,21 @@ import torch.nn as nn
 class HerculesMomentumContrast(nn.Module):
     def __init__(
             self,
-            base_encoder:nn.Sequential,
+            base_encoder:nn.Module,
             queue_size:int = 65536,
             embedding_dim:int = 512,
             momentum_coefficient:float = 0.99,
             softmax_temperature:float = 0.07,
     ):
         super(HerculesMomentumContrast, self).__init__()
-        self.base_encoder = base_encoder
         self.momentum_coefficient = momentum_coefficient
         self.softmax_temperature = softmax_temperature
         self.queue_size = queue_size
 
         self.encoder_query = base_encoder
-        self.encoder_key = base_encoder
+        self.encoder_key = copy.deepcopy(base_encoder)  # independent copy for momentum update
 
-        for param_query, param_key in zip(self.encoder_query.parameters(), self.encoder_key.parameters()):
-            param_key.data.copy_(param_query.data)
+        for param_key in self.encoder_key.parameters():
             param_key.requires_grad_(False)
 
         self.register_buffer(
