@@ -13,8 +13,9 @@ class HerculesMomentumContrast(nn.Module):
     ):
         super(HerculesMomentumContrast, self).__init__()
         self.base_encoder = base_encoder
-        self.momentum = momentum_coefficient
+        self.momentum_coefficient = momentum_coefficient
         self.softmax_temperature = softmax_temperature
+        self.queue_size = queue_size
 
         self.encoder_query = base_encoder
         self.encoder_key = base_encoder

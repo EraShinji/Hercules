@@ -18,7 +18,6 @@ class HerculesTransformer(nn.Module):
         )
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
 
-        # 4. projector 保持一致的维度
         self.projector = nn.Sequential(
             nn.Linear(d_model, d_model),
             nn.ReLU(),
@@ -26,6 +25,10 @@ class HerculesTransformer(nn.Module):
         )
 
     def forward(self, x):
+        # x: [batch, channels, seq_len] from FeatureExtractor
+        # Convert to [batch, seq_len, d_model] for Transformer
+        x = x.permute(0, 2, 1)
+
         positions = torch.arange(x.size(1), device=x.device).unsqueeze(0).expand(x.size(0), -1)
 
         pos_emb = self.pos_encoder(positions)
